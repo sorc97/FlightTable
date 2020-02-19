@@ -1,0 +1,13 @@
+.flight-table {
+  text-align: center;
+  margin: 0 auto;
+}
+
+table td {
+  padding: 10px;
+}
+
+table th {
+  padding: 0px 15px;
+  max-width: 150px;
+}
