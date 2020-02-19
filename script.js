@@ -3,21 +3,24 @@
 // Constants
 const API = 'https://data-live.flightradar24.com/zones/fcgi/feed.js?bounds=56.84,55.27,33.48,41.48';
 const DATA_UPDATE_TIME = 4000;
-let prevData = null;
 // Elements variables
 const table = document.querySelector('.flight-table');
 const tbody = table.querySelector('tbody');
-
 
 // Table components
 class Row {
   constructor(id, data) {
     const rowElement = document.createElement('tr');
     rowElement.dataset.id = id;
-    const keys = Object.keys(data);
-    // Create cells
-    keys.forEach(key => {
-      const cell = new Cell(data[key]);
+    rowElement.addEventListener('click', toggleActiveRow);
+
+    if(localStorage[id]) {
+      rowElement.classList.add('active');
+    }
+
+    // Create cells 
+    data.forEach(item => {
+      const cell = new Cell(item);
       rowElement.append(cell);
     })
 
@@ -28,14 +31,27 @@ class Row {
 class Cell {
   constructor(cellData) {
     const cellElement = document.createElement('td');
-    cellElement.innerHTML = `<td>${cellData}</td>`
+    cellElement.innerHTML = cellData;
 
     return cellElement;
   }
 }
 
-// Data fetch functions 
+const toggleActiveRow = e => {
+  const target = e.target;
+  const activeRow = target.closest('tr');
 
+  if(activeRow.classList.contains('active')) {
+    activeRow.classList.remove('active');  
+    localStorage.removeItem(activeRow.dataset.id);
+    return;
+  }
+  
+  activeRow.classList.add('active');  
+  localStorage.setItem(activeRow.dataset.id, true);
+}
+
+// Data handling
 const fetchData = async (url) => {
   const response = await fetch(url);
   const data = await response.json();
@@ -44,14 +60,15 @@ const fetchData = async (url) => {
   return handleResponse(data);
 }
 
-const getEssentialData = (arr = []) => ({
+// Get only necessary data
+const getEssentialData = (arr = []) => ({ 
   flightNumber: arr[16],
   heading: arr[3],
   speed: arr[5],
   height: arr[4],
   coords: `${arr[1]} <br> ${arr[2]}`,
   airportCods: `${arr[11]} - ${arr[12]}`,
-  distanceToDME: arr[6],
+  distanceToDME: +arr[6],
 })
 
 const handleResponse = (obj = {}) => {
@@ -62,7 +79,8 @@ const handleResponse = (obj = {}) => {
       continue;
     }
 
-    newObj[key] = getEssentialData(obj[key]);
+    const essentialData = getEssentialData(obj[key]);
+    newObj[key] = Object.values(essentialData);
   }
 
   return newObj;
@@ -70,12 +88,16 @@ const handleResponse = (obj = {}) => {
 
 // Table elements creation
 
+const createRow = (id, data) => {
+  const row = new Row(id, data);
+  tbody.append(row);
+}
+
 const createInitialRows = async () => {
   const data = await fetchData(API);
 
   for (let key in data) {
-    const row = new Row(key, data[key]);
-    tbody.append(row);
+    createRow(key, data[key]);
   }
 }
 
@@ -97,11 +119,12 @@ const updateRows = (data = {}) => {
     const rowId = row.dataset.id;
 
     if (rowId in data) {
-      updateCells(row, Object.values(data[rowId]));
+      updateCells(row, data[rowId]);
       return;
     }
 
     row.remove();
+    localStorage.removeItem(rowId);
   });
 }
 
