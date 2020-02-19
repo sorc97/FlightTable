@@ -6,6 +6,10 @@ const DATA_UPDATE_TIME = 4000;
 // Elements variables
 const table = document.querySelector('.flight-table');
 const tbody = table.querySelector('tbody');
+// Sort variables
+const sortableCaption = document.querySelector('th[sortable]');
+const sortIndex = sortableCaption.cellIndex;
+let currentSort = 'byLowRange';
 
 // Table components
 class Row {
@@ -14,7 +18,7 @@ class Row {
     rowElement.dataset.id = id;
     rowElement.addEventListener('click', toggleActiveRow);
 
-    if(localStorage[id]) {
+    if (localStorage[id]) {
       rowElement.classList.add('active');
     }
 
@@ -37,19 +41,30 @@ class Cell {
   }
 }
 
+// Row selection
 const toggleActiveRow = e => {
   const target = e.target;
   const activeRow = target.closest('tr');
 
-  if(activeRow.classList.contains('active')) {
-    activeRow.classList.remove('active');  
+  if (activeRow.classList.contains('active')) {
+    activeRow.classList.remove('active');
     localStorage.removeItem(activeRow.dataset.id);
     return;
   }
-  
-  activeRow.classList.add('active');  
+
+  activeRow.classList.add('active');
   localStorage.setItem(activeRow.dataset.id, true);
 }
+
+// Sort selection
+const handleSortSelect = () => {
+  currentSort = (currentSort === 'byLowRange') ? 'byHighRange' : 'byLowRange';
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  sortRows(rows);
+}
+
+sortableCaption.addEventListener('click', handleSortSelect);
 
 // Data handling
 const fetchData = async (url) => {
@@ -61,7 +76,7 @@ const fetchData = async (url) => {
 }
 
 // Get only necessary data
-const getEssentialData = (arr = []) => ({ 
+const getEssentialData = (arr = []) => ({
   flightNumber: arr[16],
   heading: arr[3],
   speed: arr[5],
@@ -86,30 +101,42 @@ const handleResponse = (obj = {}) => {
   return newObj;
 }
 
-// Table elements creation
-
-const createRow = (id, data) => {
-  const row = new Row(id, data);
-  tbody.append(row);
-}
-
 const createInitialRows = async () => {
   const data = await fetchData(API);
+  let rows = [];
 
   for (let key in data) {
-    createRow(key, data[key]);
+    const newRow = new Row(key, data[key]);
+    rows = [...rows, newRow];
   }
+
+  sortRows(rows);
+  console.log(rows);
+}
+
+function sortRows(rows = []) {
+  let sortFunc = null;
+
+  switch(currentSort) {
+    case 'byLowRange':
+      sortFunc = (a, b) => b.cells[sortIndex].innerHTML - a.cells[sortIndex].innerHTML
+    break;
+    
+    case 'byHighRange': 
+      sortFunc = (a, b) => a.cells[sortIndex].innerHTML - b.cells[sortIndex].innerHTML
+    break;
+  }
+  
+  rows.sort(sortFunc);
+  tbody.append(...rows);
 }
 
 // Table updating
-
 const updateData = async () => {
   const data = await fetchData(API);
 
   updateRows(data);
   insertNewRows(data);
-
-  console.log(data);
 }
 
 const updateRows = (data = {}) => {
@@ -139,7 +166,7 @@ const updateCells = (row, newData = []) => {
 }
 
 const insertNewRows = (data = {}) => {
-  const rows = document.querySelectorAll('tr[data-id]');
+  let rows = Array.from(document.querySelectorAll('tr[data-id]'));
   let rowsId = new Set();
   rows.forEach(
     row => rowsId = rowsId.add(row.dataset.id)
@@ -147,11 +174,13 @@ const insertNewRows = (data = {}) => {
 
   for (let key in data) {
     if (!rowsId.has(key)) {
-      const row = new Row(key, data[key]);
-      tbody.append(row);
-      console.log('NEW ROW', row);
+      let newRow = new Row(key, data[key]);
+      rows = [...rows, newRow];
+      console.log('NEW ROW', newRow, data[key]);
     }
   }
+
+  sortRows(rows);
 }
 
 setInterval(() => {
