@@ -3,6 +3,8 @@
 // Constants
 const API = 'https://data-live.flightradar24.com/zones/fcgi/feed.js?bounds=56.84,55.27,33.48,41.48';
 const DATA_UPDATE_TIME = 4000;
+const DME_LAT = 55.410307;
+const DME_LON = 37.902451;
 // Elements variables
 const table = document.querySelector('.flight-table');
 const tbody = table.querySelector('tbody');
@@ -63,10 +65,10 @@ const handleSortSelect = () => {
 
   sortRows(rows);
 }
-
+// Sort caption click handler
 sortableCaption.addEventListener('click', handleSortSelect);
 
-// Data handling
+// Get data from api
 const fetchData = async (url) => {
   const response = await fetch(url);
   const data = await response.json();
@@ -83,11 +85,31 @@ const getEssentialData = (arr = []) => ({
   height: arr[4],
   coords: `${arr[1]} <br> ${arr[2]}`,
   airportCods: `${arr[11]} - ${arr[12]}`,
-  distanceToDME: +arr[6],
+  distanceToDME: getDistanceFromLatLonInKm(DME_LAT, DME_LON, arr[1], arr[2]),
 })
 
-const handleResponse = (obj = {}) => {
-  let newObj = {};
+// Calculate range to DME
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  var R = 6371; // Radius of the earth in km
+  var dLat = deg2rad(lat2 - lat1);  // deg2rad below
+  var dLon = deg2rad(lon2 - lon1);
+  var a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    ;
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var d = R * c; // Distance in km
+  return Math.round(d);
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI / 180)
+}
+
+// Make new data based on response
+const handleResponse = (obj = {}) => {  
+  let filteredData = {};
 
   for (let key in obj) {
     if (key === 'full_count' || key === 'version') {
@@ -95,13 +117,14 @@ const handleResponse = (obj = {}) => {
     }
 
     const essentialData = getEssentialData(obj[key]);
-    newObj[key] = Object.values(essentialData);
+    filteredData[key] = Object.values(essentialData);
   }
 
-  return newObj;
+  return filteredData;
 }
 
-const createInitialRows = async () => {
+// Create initial table
+const createInitialRows = async () => {  
   const data = await fetchData(API);
   let rows = [];
 
@@ -114,19 +137,20 @@ const createInitialRows = async () => {
   console.log(rows);
 }
 
-function sortRows(rows = []) {
+// Sort all rows and append to the table
+function sortRows(rows = []) {  
   let sortFunc = null;
 
-  switch(currentSort) {
+  switch (currentSort) {
     case 'byLowRange':
       sortFunc = (a, b) => b.cells[sortIndex].innerHTML - a.cells[sortIndex].innerHTML
-    break;
-    
-    case 'byHighRange': 
+      break;
+
+    case 'byHighRange':
       sortFunc = (a, b) => a.cells[sortIndex].innerHTML - b.cells[sortIndex].innerHTML
-    break;
+      break;
   }
-  
+
   rows.sort(sortFunc);
   tbody.append(...rows);
 }
