@@ -72,10 +72,14 @@ sortableCaption.addEventListener('click', handleSortSelect);  // Sort handler
 
 // Get data from api
 const fetchData = async (url) => {
-  const response = await fetch(url);
-  const data = await response.json();
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
 
-  return handleResponse(data);  // Return filtered data
+    return handleResponse(data);  // Return filtered data
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 // Get only necessary data
