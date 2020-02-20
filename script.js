@@ -164,7 +164,6 @@ const updateData = async () => {
   const data = await fetchData(API);
 
   updateRows(data);
-  // insertNewRows(data);
 }
 
 const updateRows = (data = {}) => {
@@ -183,7 +182,7 @@ const updateRows = (data = {}) => {
     localStorage.removeItem(rowId);
   });
 
-  const updatedRows = insertNewRows(rows, data);
+  const updatedRows = insertNewRows(data);
   sortRows(updatedRows);
 }
 
@@ -197,7 +196,8 @@ const updateCells = (row, newData = []) => {
   })
 }
 
-const insertNewRows = (rowElements, data = {}) => {
+const insertNewRows = (data = {}) => {
+  const rowElements = tbody.querySelectorAll('tr');
   let rowsArray = Array.from(rowElements);
   let rowsId = new Set();
 
