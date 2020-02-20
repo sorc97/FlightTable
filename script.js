@@ -88,7 +88,7 @@ const getEssentialData = (arr = []) => ({
   heading: `${arr[3]}&deg;`,
   speed: arr[5],
   height: arr[4],
-  coords: `${arr[1]} <br> ${arr[2]}`,
+  coords: `${arr[1]}<br>${arr[2]}`,
   airportCods: `${arr[11]} - ${arr[12]}`,
   distanceToDME: getDistanceFromLatLonInKm(DME_LAT, DME_LON, arr[1], arr[2]),
 })
