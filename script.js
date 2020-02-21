@@ -86,8 +86,8 @@ const fetchData = async (url) => {
 const getEssentialData = (arr = []) => ({
   flightNumber: arr[16] || '-',
   heading: `${arr[3]}&deg;`,
-  speed: arr[5],
-  height: arr[4],
+  speed: Math.round(arr[5] * 1.852),
+  height: Math.round(arr[4] * 0.3048),
   coords: `${arr[1]}<br>${arr[2]}`,
   airportCods: `${arr[11]} - ${arr[12]}`,
   distanceToDME: getDistanceFromLatLonInKm(DME_LAT, DME_LON, arr[1], arr[2]),
